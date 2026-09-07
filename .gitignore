@@ -1,0 +1,11 @@
+node_modules
+
+# Keep environment variables out of version control
+.env
+
+# Compiled JavaScript output
+dist
+
+# Prisma Client is generated from the schema, so it does not belong in git
+/src/generated/prisma
+.claude 
