@@ -3,26 +3,77 @@ generator client {
   output   = "../src/generated/prisma"
 }
 
+// In Prisma 7 the connection string is NOT set here.
+// It lives in prisma7.config.ts, which reads DATABASE_URL from .env
 datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CommentStatus {
+  APPROVED
+  REJECT
+}
+
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
+  id    String @id @default(uuid())
+  name  String
+  email String @unique
+  role  Role   @default(USER)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  posts     Post[]
+
+  posts    Post[]
+  comments Comment[]
 }
 
 model Post {
-  id        String   @id @default(uuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
+  id         String     @id @default(uuid())
+  title      String
+  content    String
+  thumbnail  String?
+  isFeatured Boolean    @default(false)
+  status     PostStatus @default(DRAFT)
+  tags       String[]
+  views      Int        @default(0)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id      String        @id @default(uuid())
+  content String
+  status  CommentStatus @default(APPROVED)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // Self-relation: a comment can be a reply to another comment.
+  // parentId = null means it is a top-level comment.
+  parentId String?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
